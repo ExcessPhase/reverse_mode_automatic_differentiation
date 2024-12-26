@@ -1,0 +1,17 @@
+display2d:false$
+ratprint:false$
+float(
+	taylor(
+		exp((x0 + x1)*(x0 - x1)),
+		[x0, x1],
+		[1.2, 2.1],
+		1
+	)
+)$
+subst(x0-1.2=X0, %)$
+subst(x1-2.1=X1, %)$
+/*
+subst(x2-1.4=X2, %)$
+subst(x3-1.5=X3, %)$
+*/
+expand(%);
