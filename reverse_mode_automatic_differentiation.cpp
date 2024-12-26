@@ -6,6 +6,10 @@
 #include <optional>
 
 
+namespace foelsche
+{
+namespace rmad
+{
 struct environment
 {	const std::vector<double> m_sIndependent;
 	std::vector<double>&m_rDer;
@@ -40,7 +44,7 @@ thread_local std::size_t hasId::s_iNextIndex;
 template<std::size_t ENUM>
 struct independent;
 template<std::size_t ENUM>
-independent<ENUM> X(void);
+const independent<ENUM> &X(void);
 template<std::size_t ENUM>
 struct independent:hasId
 {	double calculate(const environment&_r) const
@@ -53,20 +57,21 @@ struct independent:hasId
 	{	_r.reportDerivative(ENUM, _d);
 	}
 	template<std::size_t E>
-	friend independent<E> X(void);
+	friend const independent<E> &X(void);
 };
 template<std::size_t ENUM>
-independent<ENUM> X(void)
-{	return {};
+const independent<ENUM> &X(void)
+{	static const independent<ENUM> s;
+	return s;
 }
 template<typename L, typename R>
 struct addition;
 template<typename L, typename R>
-addition<L, R> operator+(const L&_rL, const R&_rR);
+const addition<L, R> &operator+(const L&_rL, const R&_rR);
 template<typename L, typename R>
 struct addition:hasId
-{	const L m_sL;
-	const R m_sR;
+{	const L &m_sL;
+	const R &m_sR;
 	addition(const L&_rL, const R&_rR)
 		:m_sL(_rL),
 		m_sR(_rR)
@@ -83,18 +88,19 @@ struct addition:hasId
 		m_sR.backannotate(_r, _d);
 	}
 	template<typename L1, typename R1>
-	friend addition<L1, R1> operator+(const L1&_rL, const R1&_rR)
-	{	return {_rL, _rR};
+	friend const addition<L1, R1> &operator+(const L1&_rL, const R1&_rR)
+	{	static const addition<L1, R1> s(_rL, _rR);
+		return s;
 	}
 };
 template<typename L, typename R>
 struct subtraction;
 template<typename L, typename R>
-subtraction<L, R> operator-(const L&_rL, const R&_rR);
+const subtraction<L, R> &operator-(const L&_rL, const R&_rR);
 template<typename L, typename R>
 struct subtraction:hasId
-{	const L m_sL;
-	const R m_sR;
+{	const L &m_sL;
+	const R &m_sR;
 	subtraction(const L&_rL, const R&_rR)
 		:m_sL(_rL),
 		m_sR(_rR)
@@ -111,18 +117,19 @@ struct subtraction:hasId
 		m_sR.backannotate(_r, -_d);
 	}
 	template<typename L1, typename R1>
-	friend subtraction<L1, R1> operator-(const L1&_rL, const R1&_rR)
-	{	return {_rL, _rR};
+	friend const subtraction<L1, R1> &operator-(const L1&_rL, const R1&_rR)
+	{	static const subtraction<L1, R1> s(_rL, _rR);
+		return s;
 	}
 };
 template<typename L, typename R>
 struct multiplication;
 template<typename L1, typename R1>
-multiplication<L1, R1> operator*(const L1&_rL, const R1&_rR);
+const multiplication<L1, R1> &operator*(const L1&_rL, const R1&_rR);
 template<typename L, typename R>
 struct multiplication:hasId
-{	const L m_sL;
-	const R m_sR;
+{	const L &m_sL;
+	const R &m_sR;
 	multiplication(const L&_rL, const R&_rR)
 		:m_sL(_rL),
 		m_sR(_rR)
@@ -139,17 +146,19 @@ struct multiplication:hasId
 		m_sR.backannotate(_r, _d*m_sL.calculate(_r));
 	}
 	template<typename L1, typename R1>
-	friend multiplication<L1, R1> operator*(const L1&_rL, const R1&_rR)
-	{	return {_rL, _rR};
+	friend const multiplication<L1, R1> &operator*(const L1&_rL, const R1&_rR)
+	{	static const multiplication<L1, R1> s(_rL, _rR);
+		return s;
 	}
 };
+#if 0
 template<typename L>
 struct EXP;
 template<typename L>
-EXP<L> exp(const L&);
+const EXP<L> &exp(const L&);
 template<typename L>
 struct EXP:hasId
-{	const L m_s;
+{	const L &m_s;
 	EXP(const L&_r)
 		:m_s(_r)
 	{
@@ -168,18 +177,62 @@ struct EXP:hasId
 	{	m_s.backannotate(_r, _d*_r.m_rValues[m_iIndex].value().second);
 	}
 	template<typename T>
-	friend EXP<T> exp(const T&);
+	friend const EXP<T> &exp(const T&);
 };
 template<typename L>
-EXP<L> exp(const L&_r)
-{	return {_r};
+const EXP<L> &exp(const L&_r)
+{	static const EXP<L> s(_r);
+	return s;
 }
-
+#endif
+template<environment::doublePair (*P)(const double), typename L>
+struct NONLINEAR;
+template<environment::doublePair (*P)(const double), typename L>
+const NONLINEAR<P, L> &nonlinear(const L&);
+template<environment::doublePair (*P)(const double), typename L>
+struct NONLINEAR:hasId
+{	const L &m_s;
+	NONLINEAR(const L&_r)
+		:m_s(_r)
+	{
+	}
+	double calculate(const environment&_r) const
+	{	if (auto &r = _r.m_rValues[m_iIndex])
+			return r.value().first;
+		else
+			return (r = P(m_s.calculate(_r)))->first;
+	}
+	void backannotate(const environment&_r, const double _d) const
+	{	m_s.backannotate(_r, _d*_r.m_rValues[m_iIndex].value().second);
+	}
+	template<environment::doublePair (*P1)(const double), typename L1>
+	friend const NONLINEAR<P1, L1> &nonlinear(const L1&_r)
+	{	static const NONLINEAR<P1, L1> s(_r);
+		return s;
+	}
+};
+environment::doublePair exp(const double _d)
+{	const auto d = std::exp(_d);
+	return std::make_pair(d, d);
+}
+environment::doublePair sin(const double _d)
+{	return std::make_pair(std::sin(_d), std::cos(_d));
+}
+environment::doublePair cos(const double _d)
+{	return std::make_pair(std::cos(_d), -std::sin(_d));
+}
+environment::doublePair sqrt(const double _d)
+{	const double d = std::sqrt(_d);
+	return std::make_pair(d, 0.5/d);
+}
+}
+}
 int main()
-{	const auto s = exp((X<0>() + X<1>())*(X<0>() - X<1>()));
+{	using namespace foelsche::rmad;
+	const auto &s = nonlinear<sqrt>((X<0>() + X<1>())*(X<0>() - X<1>()));
 	std::vector<double> sDer(2);
 	std::vector<std::optional<environment::doublePair> > sValues(hasId::s_iNextIndex);
-	const environment sEnv({1.2, 2.1}, sDer, sValues);
+	const environment sEnv({1.2, 1.1}, sDer, sValues);
 	std::cout << s.calculate(sEnv) << "\n";
 	s.backannotate(sEnv, 1.0);
 	for (const auto d : sDer)
