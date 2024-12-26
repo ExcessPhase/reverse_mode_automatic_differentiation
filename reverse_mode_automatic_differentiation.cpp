@@ -9,11 +9,12 @@
 struct environment
 {	const std::vector<double> m_sIndependent;
 	std::vector<double>&m_rDer;
-	std::vector<std::optional<double> >&m_rValues;
+	typedef std::pair<double, double> doublePair;
+	std::vector<std::optional<doublePair> >&m_rValues;
 	environment(
 		std::vector<double> _s,
 		std::vector<double>&_rDer,
-		std::vector<std::optional<double> >&_rValues
+		std::vector<std::optional<doublePair> >&_rValues
 	)
 		:m_sIndependent(std::move(_s)),
 		m_rDer(_rDer),
@@ -44,9 +45,9 @@ template<std::size_t ENUM>
 struct independent:hasId
 {	double calculate(const environment&_r) const
 	{	if (auto &r = _r.m_rValues[m_iIndex])
-			return r.value();
+			return r.value().first;
 		else
-			return *(r = _r.getIndependent(ENUM));
+			return (r = std::make_pair(_r.getIndependent(ENUM), 0.0))->first;
 	}
 	void backannotate(const environment&_r, const double _d) const
 	{	_r.reportDerivative(ENUM, _d);
@@ -73,9 +74,9 @@ struct addition:hasId
 	}
 	double calculate(const environment&_r) const
 	{	if (auto &r = _r.m_rValues[m_iIndex])
-			return r.value();
+			return r.value().first;
 		else
-			return *(r = m_sL.calculate(_r) + m_sR.calculate(_r));
+			return (r = std::make_pair(m_sL.calculate(_r) + m_sR.calculate(_r), 0.0))->first;
 	}
 	void backannotate(const environment&_r, const double _d) const
 	{	m_sL.backannotate(_r, _d);
@@ -101,9 +102,9 @@ struct subtraction:hasId
 	}
 	double calculate(const environment&_r) const
 	{	if (auto &r = _r.m_rValues[m_iIndex])
-			return r.value();
+			return r.value().first;
 		else
-			return *(r = m_sL.calculate(_r) - m_sR.calculate(_r));
+			return (r = std::make_pair(m_sL.calculate(_r) - m_sR.calculate(_r), 0.0))->first;
 	}
 	void backannotate(const environment&_r, const double _d) const
 	{	m_sL.backannotate(_r, _d);
@@ -129,9 +130,9 @@ struct multiplication:hasId
 	}
 	double calculate(const environment&_r) const
 	{	if (auto &r = _r.m_rValues[m_iIndex])
-			return r.value();
+			return r.value().first;
 		else
-			return *(r = m_sL.calculate(_r) * m_sR.calculate(_r));
+			return (r = std::make_pair(m_sL.calculate(_r) * m_sR.calculate(_r), 0.0))->first;
 	}
 	void backannotate(const environment&_r, const double _d) const
 	{	m_sL.backannotate(_r, _d*m_sR.calculate(_r));
@@ -155,12 +156,16 @@ struct EXP:hasId
 	}
 	double calculate(const environment&_r) const
 	{	if (auto &r = _r.m_rValues[m_iIndex])
-			return r.value();
+			return r.value().first;
 		else
-			return *(r = std::exp(m_s.calculate(_r)));
+			return (r = [&](void)
+				{	const auto d = std::exp(m_s.calculate(_r));
+					return std::make_pair(d, d);
+				}()
+			)->first;
 	}
 	void backannotate(const environment&_r, const double _d) const
-	{	m_s.backannotate(_r, _d*_r.m_rValues[m_iIndex].value());
+	{	m_s.backannotate(_r, _d*_r.m_rValues[m_iIndex].value().second);
 	}
 	template<typename T>
 	friend EXP<T> exp(const T&);
@@ -173,7 +178,7 @@ EXP<L> exp(const L&_r)
 int main()
 {	const auto s = exp((X<0>() + X<1>())*(X<0>() - X<1>()));
 	std::vector<double> sDer(2);
-	std::vector<std::optional<double> > sValues(hasId::s_iNextIndex);
+	std::vector<std::optional<environment::doublePair> > sValues(hasId::s_iNextIndex);
 	const environment sEnv({1.2, 2.1}, sDer, sValues);
 	std::cout << s.calculate(sEnv) << "\n";
 	s.backannotate(sEnv, 1.0);
