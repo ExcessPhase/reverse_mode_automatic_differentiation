@@ -59,7 +59,7 @@ struct independent:hasId
 		else
 			return (r = std::make_pair(_r.getIndependent(ENUM), 0.0))->first;
 	}
-	void backannotate(const environment&_r, const double _d) const
+	void backpropagate(const environment&_r, const double _d) const
 	{	_r.reportDerivative(ENUM, _d);
 	}
 	template<std::size_t E>
@@ -92,9 +92,9 @@ struct addition:hasId
 		else
 			return (r = std::make_pair(m_sL.calculate(_r) + m_sR.calculate(_r), 0.0))->first;
 	}
-	void backannotate(const environment&_r, const double _d) const
-	{	m_sL.backannotate(_r, _d);
-		m_sR.backannotate(_r, _d);
+	void backpropagate(const environment&_r, const double _d) const
+	{	m_sL.backpropagate(_r, _d);
+		m_sR.backpropagate(_r, _d);
 	}
 		/// the way to create an instance
 	template<typename L1, typename R1>
@@ -124,9 +124,9 @@ struct subtraction:hasId
 		else
 			return (r = std::make_pair(m_sL.calculate(_r) - m_sR.calculate(_r), 0.0))->first;
 	}
-	void backannotate(const environment&_r, const double _d) const
-	{	m_sL.backannotate(_r, _d);
-		m_sR.backannotate(_r, -_d);
+	void backpropagate(const environment&_r, const double _d) const
+	{	m_sL.backpropagate(_r, _d);
+		m_sR.backpropagate(_r, -_d);
 	}
 		/// the way to create an object
 	template<typename L1, typename R1>
@@ -156,9 +156,9 @@ struct multiplication:hasId
 		else
 			return (r = std::make_pair(m_sL.calculate(_r) * m_sR.calculate(_r), 0.0))->first;
 	}
-	void backannotate(const environment&_r, const double _d) const
-	{	m_sL.backannotate(_r, _d*m_sR.calculate(_r));
-		m_sR.backannotate(_r, _d*m_sL.calculate(_r));
+	void backpropagate(const environment&_r, const double _d) const
+	{	m_sL.backpropagate(_r, _d*m_sR.calculate(_r));
+		m_sR.backpropagate(_r, _d*m_sL.calculate(_r));
 	}
 		/// the way to create an object
 	template<typename L1, typename R1>
@@ -188,9 +188,9 @@ struct division:hasId
 		else
 			return (r = std::make_pair(m_sL.calculate(_r) / m_sR.calculate(_r), 0.0))->first;
 	}
-	void backannotate(const environment&_r, const double _d) const
-	{	m_sL.backannotate(_r, _d/m_sR.calculate(_r));
-		m_sR.backannotate(_r, -_d*m_sL.calculate(_r)/(m_sR.calculate(_r)*m_sR.calculate(_r)));
+	void backpropagate(const environment&_r, const double _d) const
+	{	m_sL.backpropagate(_r, _d/m_sR.calculate(_r));
+		m_sR.backpropagate(_r, -_d*m_sL.calculate(_r)/(m_sR.calculate(_r)*m_sR.calculate(_r)));
 	}
 		/// the way to create a division object
 	template<typename L1, typename R1>
@@ -217,8 +217,8 @@ struct NONLINEAR:hasId
 		else
 			return (r = P(m_s.calculate(_r)))->first;
 	}
-	void backannotate(const environment&_r, const double _d) const
-	{	m_s.backannotate(_r, _d*_r.m_rValues[m_iIndex].value().second);
+	void backpropagate(const environment&_r, const double _d) const
+	{	m_s.backpropagate(_r, _d*_r.m_rValues[m_iIndex].value().second);
 	}
 		/// the way to create an object
 	template<environment::doublePair (*P1)(const double), typename L1>
@@ -258,7 +258,7 @@ int main()
 		/// first argument are the values for the independent variables
 	const environment sEnv({1.2, 1.1}, sDer, sValues);
 	std::cout << "value=" << s.calculate(sEnv) << "\n";
-	s.backannotate(sEnv, 1.0);
+	s.backpropagate(sEnv, 1.0);
 	for (const auto d : sDer)
 		std::cout << "der=" << d << "\n";	
 }
