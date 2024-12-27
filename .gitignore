@@ -363,3 +363,5 @@ MigrationBackup/
 FodyWeavers.xsd
 /a.out
 /maxima.txt
+/make.out
+/tmp
