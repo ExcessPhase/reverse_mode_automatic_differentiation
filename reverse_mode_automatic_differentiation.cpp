@@ -10,6 +10,9 @@ namespace foelsche
 {
 namespace rmad
 {
+	/// an environment object keeping values of independent variables
+	/// and expecting derivative values
+	/// and storing intermediate values
 struct environment
 {	const std::vector<double> m_sIndependent;
 	std::vector<double>&m_rDer;
@@ -32,6 +35,7 @@ struct environment
 	{	m_rDer[_i] += _d;
 	}
 };
+	/// an object with a unique ID within the current thread
 struct hasId
 {	const std::size_t m_iIndex;
 	static thread_local std::size_t s_iNextIndex;
@@ -45,6 +49,8 @@ template<std::size_t ENUM>
 struct independent;
 template<std::size_t ENUM>
 const independent<ENUM> &X(void);
+	/// an independent variable
+	/// immutable & unique
 template<std::size_t ENUM>
 struct independent:hasId
 {	double calculate(const environment&_r) const
@@ -59,6 +65,7 @@ struct independent:hasId
 	template<std::size_t E>
 	friend const independent<E> &X(void);
 };
+	/// the way to create an independent variable
 template<std::size_t ENUM>
 const independent<ENUM> &X(void)
 {	static const independent<ENUM> s;
@@ -68,6 +75,8 @@ template<typename L, typename R>
 struct addition;
 template<typename L, typename R>
 const addition<L, R> &operator+(const L&_rL, const R&_rR);
+	/// the result of adding two values
+	/// immutable & unique
 template<typename L, typename R>
 struct addition:hasId
 {	const L &m_sL;
@@ -87,6 +96,7 @@ struct addition:hasId
 	{	m_sL.backannotate(_r, _d);
 		m_sR.backannotate(_r, _d);
 	}
+		/// the way to create an instance
 	template<typename L1, typename R1>
 	friend const addition<L1, R1> &operator+(const L1&_rL, const R1&_rR)
 	{	static const addition<L1, R1> s(_rL, _rR);
@@ -97,6 +107,8 @@ template<typename L, typename R>
 struct subtraction;
 template<typename L, typename R>
 const subtraction<L, R> &operator-(const L&_rL, const R&_rR);
+	/// the result of a substraction
+	/// immutable & unique
 template<typename L, typename R>
 struct subtraction:hasId
 {	const L &m_sL;
@@ -116,6 +128,7 @@ struct subtraction:hasId
 	{	m_sL.backannotate(_r, _d);
 		m_sR.backannotate(_r, -_d);
 	}
+		/// the way to create an object
 	template<typename L1, typename R1>
 	friend const subtraction<L1, R1> &operator-(const L1&_rL, const R1&_rR)
 	{	static const subtraction<L1, R1> s(_rL, _rR);
@@ -126,6 +139,8 @@ template<typename L, typename R>
 struct multiplication;
 template<typename L1, typename R1>
 const multiplication<L1, R1> &operator*(const L1&_rL, const R1&_rR);
+	/// the result of a multiplication
+	/// immutable and unique
 template<typename L, typename R>
 struct multiplication:hasId
 {	const L &m_sL;
@@ -145,6 +160,7 @@ struct multiplication:hasId
 	{	m_sL.backannotate(_r, _d*m_sR.calculate(_r));
 		m_sR.backannotate(_r, _d*m_sL.calculate(_r));
 	}
+		/// the way to create an object
 	template<typename L1, typename R1>
 	friend const multiplication<L1, R1> &operator*(const L1&_rL, const R1&_rR)
 	{	static const multiplication<L1, R1> s(_rL, _rR);
@@ -155,6 +171,8 @@ template<typename L, typename R>
 struct division;
 template<typename L1, typename R1>
 const division<L1, R1> &operator/(const L1&_rL, const R1&_rR);
+	/// the result of a division
+	/// immutable and unique
 template<typename L, typename R>
 struct division:hasId
 {	const L &m_sL;
@@ -174,6 +192,7 @@ struct division:hasId
 	{	m_sL.backannotate(_r, _d/m_sR.calculate(_r));
 		m_sR.backannotate(_r, -_d*m_sL.calculate(_r)/(m_sR.calculate(_r)*m_sR.calculate(_r)));
 	}
+		/// the way to create a division object
 	template<typename L1, typename R1>
 	friend const division<L1, R1> &operator/(const L1&_rL, const R1&_rR)
 	{	static const division<L1, R1> s(_rL, _rR);
@@ -184,6 +203,7 @@ template<environment::doublePair (*P)(const double), typename L>
 struct NONLINEAR;
 template<environment::doublePair (*P)(const double), typename L>
 const NONLINEAR<P, L> &nonlinear(const L&);
+	/// a nonlinear function with a single argument
 template<environment::doublePair (*P)(const double), typename L>
 struct NONLINEAR:hasId
 {	const L &m_s;
@@ -200,22 +220,27 @@ struct NONLINEAR:hasId
 	void backannotate(const environment&_r, const double _d) const
 	{	m_s.backannotate(_r, _d*_r.m_rValues[m_iIndex].value().second);
 	}
+		/// the way to create an object
 	template<environment::doublePair (*P1)(const double), typename L1>
 	friend const NONLINEAR<P1, L1> &nonlinear(const L1&_r)
 	{	static const NONLINEAR<P1, L1> s(_r);
 		return s;
 	}
 };
+	/// helper function to create a nonlinear object
 environment::doublePair exp(const double _d)
 {	const auto d = std::exp(_d);
 	return std::make_pair(d, d);
 }
+	/// helper function to create a nonlinear object
 environment::doublePair sin(const double _d)
 {	return std::make_pair(std::sin(_d), std::cos(_d));
 }
+	/// helper function to create a nonlinear object
 environment::doublePair cos(const double _d)
 {	return std::make_pair(std::cos(_d), -std::sin(_d));
 }
+	/// helper function to create a nonlinear object
 environment::doublePair sqrt(const double _d)
 {	const double d = std::sqrt(_d);
 	return std::make_pair(d, 0.5/d);
@@ -224,12 +249,16 @@ environment::doublePair sqrt(const double _d)
 }
 int main()
 {	using namespace foelsche::rmad;
+		/// an expression
 	static const auto &s = nonlinear<sqrt>((X<0>() + X<1>())/(X<0>() - X<1>()));
+		/// where to keep the derivative vs X0 and X1
 	std::vector<double> sDer(2);
+		/// where to keep the values
 	std::vector<std::optional<environment::doublePair> > sValues(hasId::s_iNextIndex);
+		/// first argument are the values for the independent variables
 	const environment sEnv({1.2, 1.1}, sDer, sValues);
-	std::cout << s.calculate(sEnv) << "\n";
+	std::cout << "value=" << s.calculate(sEnv) << "\n";
 	s.backannotate(sEnv, 1.0);
 	for (const auto d : sDer)
-		std::cout << d << "\n";	
+		std::cout << "der=" << d << "\n";	
 }
