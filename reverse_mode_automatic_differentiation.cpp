@@ -224,7 +224,7 @@ environment::doublePair sqrt(const double _d)
 }
 int main()
 {	using namespace foelsche::rmad;
-	const auto &s = nonlinear<sqrt>((X<0>() + X<1>())/(X<0>() - X<1>()));
+	static const auto &s = nonlinear<sqrt>((X<0>() + X<1>())/(X<0>() - X<1>()));
 	std::vector<double> sDer(2);
 	std::vector<std::optional<environment::doublePair> > sValues(hasId::s_iNextIndex);
 	const environment sEnv({1.2, 1.1}, sDer, sValues);
