@@ -186,10 +186,12 @@ struct division:hasId
 	{	if (auto &r = _r.m_rValues[m_iIndex])
 			return r.value().first;
 		else
-			return (r = std::make_pair(m_sL.calculate(_r) / m_sR.calculate(_r), 0.0))->first;
+		{	const auto dInv = 1.0/m_sR.calculate(_r);
+			return (r = std::make_pair(m_sL.calculate(_r)*dInv, dInv))->first;
+		}
 	}
 	void backpropagate(const environment&_r, const double _d) const
-	{	const auto dInv = 1.0/m_sR.calculate(_r);
+	{	const auto dInv = _r.m_rValues[m_iIndex]->second;
 		const auto d = _d*dInv;
 		m_sL.backpropagate(_r, d);
 		m_sR.backpropagate(_r, -d*m_sL.calculate(_r)*dInv);
