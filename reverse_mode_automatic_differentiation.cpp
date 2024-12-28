@@ -189,8 +189,10 @@ struct division:hasId
 			return (r = std::make_pair(m_sL.calculate(_r) / m_sR.calculate(_r), 0.0))->first;
 	}
 	void backpropagate(const environment&_r, const double _d) const
-	{	m_sL.backpropagate(_r, _d/m_sR.calculate(_r));
-		m_sR.backpropagate(_r, -_d*m_sL.calculate(_r)/(m_sR.calculate(_r)*m_sR.calculate(_r)));
+	{	const auto dInv = 1.0/m_sR.calculate(_r);
+		const auto d = _d*dInv;
+		m_sL.backpropagate(_r, d);
+		m_sR.backpropagate(_r, -d*m_sL.calculate(_r)*dInv);
 	}
 		/// the way to create a division object
 	template<typename L1, typename R1>
@@ -245,12 +247,13 @@ environment::doublePair sqrt(const double _d)
 {	const double d = std::sqrt(_d);
 	return std::make_pair(d, 0.5/d);
 }
+	/// an expression
+static const auto &s = nonlinear<sqrt>((X<0>() + X<1>())/(X<0>() - X<1>()));
 }
 }
+	
 int main()
 {	using namespace foelsche::rmad;
-		/// an expression
-	static const auto &s = nonlinear<sqrt>((X<0>() + X<1>())/(X<0>() - X<1>()));
 		/// where to keep the derivative vs X0 and X1
 	std::vector<double> sDer(2);
 		/// where to keep the values
