@@ -1,0 +1,45 @@
+/* Define the variables */
+t1: 1.0 + 0 / 100.0;
+t2: 1.0 + 1 / 100.0;
+t3: 1.0 + 2 / 100.0;
+x1: 1.0 / 1000.0;
+x2: 2.0 / 1000.0;
+x3: 3.0 / 1000.0;
+
+/* Create vectors */
+x: matrix([x1, x2, x3]);
+theta: matrix([t1, t2, t3]);
+
+/* Define symbolic variables for theta */
+theta1: 'theta1;
+theta2: 'theta2;
+theta3: 'theta3;
+
+/* Redefine the theta vector with symbolic variables */
+theta_sym: matrix([theta1, theta2, theta3]);
+
+/* Define the linear combination z */
+z: theta_sym . x;
+
+/* Define the predicted probability using the sigmoid function */
+/*
+hat_y: 1 / (1 + exp(-z))$  /* Note: no need to access an array element */
+*/
+hat_y: (-z)$  /* Note: no need to access an array element */
+
+/* Define the logistic regression loss function */
+
+/* Calculate the gradient of the loss function with respect to theta */
+grad_L1: diff(hat_y, theta1);
+grad_L2: diff(hat_y, theta2);
+grad_L3: diff(hat_y, theta3);
+
+/* Substitute numerical values of theta */
+grad_L1_evaluated: ev(grad_L1, [theta1=t1, theta2=t2, theta3=t3]);
+grad_L2_evaluated: ev(grad_L2, [theta1=t1, theta2=t2, theta3=t3]);
+grad_L3_evaluated: ev(grad_L3, [theta1=t1, theta2=t2, theta3=t3]);
+L_evaluated: ev(hat_y, [theta1=t1, theta2=t2, theta3=t3]);
+
+/* Display the evaluated gradients */
+[L_evaluated, grad_L1_evaluated, grad_L2_evaluated, grad_L3_evaluated];
+
